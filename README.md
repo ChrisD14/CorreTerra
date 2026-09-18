@@ -1,20 +1,19 @@
-Quiero continuar el proyecto actual de generación automática de documentación.
+Ahora analiza específicamente la plantilla DOCX:
 
-NO modifiques código todavía.
+plantillas/3. Especificaciones técnicas V....docx
 
-Analiza todo el repositorio y explícame:
+Necesito que determines:
 
-1. Cómo funciona actualmente el flujo para XLSX.
-2. Qué hace lector_plantilla.py.
-3. Qué hace mapeo_campos.py.
-4. Qué hace generador_doc.py.
-5. Cómo se utilizan actualmente:
-   - .github/copilot-instructions.md
-   - .github/instructions/xlsx.instructions.md
-   - .github/instructions/docx.instructions.md
-6. Qué falta implementar para poder llenar correctamente la plantilla DOCX:
-   "plantillas/3. Especificaciones técnicas V....docx"
-7. Qué archivos nuevos o cambios serían necesarios.
-8. No modifiques ningún archivo todavía.
+- qué texto corresponde a títulos;
+- qué texto corresponde a campos;
+- qué información debe reemplazarse;
+- qué información debe conservarse;
+- qué elementos están dentro de tablas;
+- qué elementos están en párrafos;
+- cómo preservar el formato;
+- cómo preservar encabezados, pies de página, firmas y estructura;
+- cómo generar una copia sin modificar la plantilla original.
 
-Quiero primero el análisis del proyecto y una propuesta de implementación.
+No modifiques el archivo todavía.
+
+Propón una estrategia técnica utilizando python-docx.
