@@ -1,90 +1,190 @@
-Haré una revisión de solo lectura del flujo actual, incluyendo lectores, generadores, pruebas y el script de ejecución. El objetivo es diseñar un orquestador que reutilice las piezas existentes, centralice el reporte de faltantes y valide ambas copias sin tocar ninguna plantilla.
+Sí, implementa la arquitectura propuesta.
 
-Read 
+Quiero que implementes la integración completa XLSX + DOCX siguiendo
+estas condiciones:
 
-Read 
+## 1. Orquestador
 
-Read 
+Crea:
 
-Read 
+src/orquestador_documentos.py
 
-Read 
+Debe coordinar:
 
-Read 
+1. lectura de etiquetas XLSX;
+2. lectura de etiquetas DOCX;
+3. unificación de etiquetas;
+4. mapeo de una única descripción;
+5. generación del XLSX;
+6. generación del DOCX;
+7. validación de los archivos generados;
+8. reporte final de completados, faltantes y advertencias.
 
-Read 
+Debe reutilizar las funciones existentes y evitar duplicar lógica.
 
-Read 
+## 2. Mapeo
 
-**Arquitectura Propuesta**
+Modifica mapeo_campos.py únicamente si es necesario.
 
-```mermaid
-flowchart LR
-    D[Descripción única] --> L1[lector_plantilla XLSX]
-    D --> L2[lector_plantilla_docx]
-    L1 --> U[Unificar etiquetas]
-    L2 --> U
-    U --> M[mapear_campos]
-    M --> GX[generar_documento XLSX]
-    M --> GD[generar_documento_docx]
-    GX --> V[validar_documentos]
-    GD --> V
-    V --> R[Reporte de resultados y faltantes]
-```
+Agrega un parámetro opcional para permitir un modo no interactivo.
 
-1. Leer las etiquetas de `plantillas/Historia de usuario.xlsx` con `leer_plantilla()`.
-2. Leer las etiquetas de la plantilla DOCX con `leer_plantilla_docx()`.
-3. Unificar etiquetas, conservando el orden y eliminando duplicados.
-4. Mapear una sola descripción contra ese conjunto unificado.
-5. Generar:
-   - `output/Historia_de_usuario_generada.xlsx`
-   - `output/Especificaciones_tecnicas_generadas.docx`
-6. Validar que ambos archivos existan, que sus plantillas no hayan cambiado y que los valores mapeados se encuentren en sus destinos.
-7. Devolver un reporte estructurado: rutas generadas, campos completados, faltantes y advertencias.
+Por ejemplo:
 
-**Reutilización**
+solicitar_faltantes=True
 
-- Se reutilizan sin duplicar lógica:
-  - `lector_plantilla.py`
-  - `lector_plantilla_docx.py`
-  - `mapeo_campos.py`
-  - `generador_doc.py`
-  - `generador_docx.py`
+El comportamiento actual debe mantenerse cuando sea True.
 
-**Cambio Necesario en Mapeo**
+Cuando sea False:
 
-Actualmente `mapear_campos()` llama a `input()` para cada etiqueta ausente. Para un flujo automatizado que “reporte y no invente”, conviene añadir un parámetro opcional, por ejemplo `solicitar_faltantes=True`:
+- no utilizar input();
+- no bloquear la ejecución;
+- devolver None para campos que no tengan coincidencia;
+- permitir que el orquestador reporte esos campos como faltantes.
 
-- `True`: mantiene el comportamiento actual de consola.
-- `False`: devuelve `None` para campos no encontrados y los incluye en un reporte de faltantes.
+Mantén compatibilidad con todas las pruebas existentes.
 
-El orquestador usaría `False`; los generadores deben omitir valores `None` y registrar advertencia. El generador DOCX ya lo hace; el XLSX requeriría ese ajuste para no escribir una celda vacía como si estuviera completada.
+## 3. XLSX
 
-**Archivos a Crear**
+Modifica generador_doc.py únicamente para que:
 
-- `src/orquestador_documentos.py`
-  - Coordina lectores, mapeo, generadores y validación.
-  - No contiene reglas específicas de XLSX/DOCX.
-  - Devuelve un diccionario de resultados.
+- los valores None no se escriban como valores completados;
+- los campos faltantes puedan registrarse como advertencias;
+- nunca se modifique la plantilla original;
+- el resultado se guarde en output/.
 
-- `src/validador_documentos.py`
-  - Verifica existencia de salidas.
-  - Compara hashes de las plantillas antes/después.
-  - Reabre los documentos generados para validar campos que sí tenían valor.
-  - Reúne advertencias y campos pendientes.
+No cambies innecesariamente la lógica que ya funciona.
 
-- `test/test_orquestador_documentos.py`
-  - Prueba generación de ambas salidas desde una descripción.
-  - Prueba reporte de faltantes.
-  - Prueba que ninguna plantilla se modifica.
+## 4. DOCX
 
-- `test/test_validador_documentos.py`
-  - Prueba validación de archivos, hashes y reporte.
+Reutiliza generador_docx.py tal como quedó corregido.
 
-**Archivos a Modificar**
+Debe conservar:
 
-- `mapeo_campos.py`: modo no interactivo y reporte de ausencias.
-- `generador_doc.py`: omitir y advertir ante valor `None`.
-- `probar_flujo.py`: reemplazar el flujo XLSX aislado por una llamada al orquestador, o crear un nuevo script de entrada como `generar_documentos.py`.
+- formato;
+- tablas;
+- títulos;
+- logos;
+- encabezados;
+- pies;
+- saltos de página;
+- firmas;
+- estructura del documento.
 
-La plantilla DOCX mantendrá como pendiente `Requisitos del Producto:` hasta que se defina un destino inequívoco en su estructura.
+No modifiques la plantilla original.
+
+"Requisitos del Producto" debe continuar como pendiente/advertencia
+mientras no exista un destino inequívoco.
+
+## 5. Validador
+
+Crea:
+
+src/validador_documentos.py
+
+Debe validar como mínimo:
+
+- que los archivos generados existan;
+- que puedan abrirse correctamente;
+- que las plantillas originales sigan existiendo;
+- que las plantillas originales no hayan sido modificadas;
+- que los valores proporcionados se encuentren en los documentos
+  generados cuando sea posible comprobarlo;
+- que los campos faltantes y advertencias queden registrados.
+
+Para comprobar que la plantilla no fue modificada, calcula el hash antes
+y después de la generación.
+
+No dependas únicamente de una comparación de fecha de modificación.
+
+## 6. Orquestador
+
+El orquestador debe producir:
+
+output/Historia_de_usuario_generada.xlsx
+
+output/Especificaciones_tecnicas_generadas.docx
+
+y devolver un resultado estructurado que permita conocer:
+
+- archivos generados;
+- campos completados;
+- campos faltantes;
+- advertencias;
+- resultado de validación.
+
+## 7. Pruebas
+
+Crea:
+
+test/test_orquestador_documentos.py
+
+Debe probar como mínimo:
+
+- generación de XLSX y DOCX;
+- descripción con información incompleta;
+- reporte de campos faltantes;
+- que no se utilice input() en modo no interactivo;
+- que las plantillas originales no sean modificadas.
+
+Crea:
+
+test/test_validador_documentos.py
+
+Debe probar:
+
+- archivos existentes;
+- archivos inválidos;
+- comparación de hashes;
+- detección de modificación de plantilla;
+- reporte de advertencias.
+
+Mantén todas las pruebas existentes.
+
+## 8. Script de ejecución
+
+No elimines probar_flujo.py.
+
+Si consideras necesario crear un nuevo punto de entrada, crea:
+
+generar_documentos.py
+
+o un nombre equivalente y explica por qué.
+
+## 9. Restricciones
+
+NO modificar las plantillas dentro de:
+
+plantillas/
+
+NO inventar información.
+
+NO eliminar contenido de las plantillas.
+
+NO duplicar la lógica de lectura, mapeo o generación.
+
+Mantén los nombres de funciones y variables en español siguiendo las
+convenciones existentes.
+
+## 10. Antes de finalizar
+
+Ejecuta:
+
+pytest -q
+
+Si alguna prueba falla, corrige el problema y vuelve a ejecutar las
+pruebas.
+
+Después genera una ejecución real utilizando las plantillas del proyecto
+y una descripción de prueba.
+
+Al finalizar muéstrame:
+
+1. archivos creados;
+2. archivos modificados;
+3. resumen de arquitectura;
+4. resultado de pytest -q;
+5. rutas de los dos documentos generados;
+6. campos completados;
+7. campos faltantes;
+8. advertencias;
+9. confirmación de que las plantillas originales no fueron modificadas..
